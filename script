@@ -1,0 +1,138 @@
+########################################################
+#### PARA EXTRAER DATOS HISTÓRICOS 
+########################################################
+
+
+# import requests
+# import zipfile
+# from pathlib import Path
+# import rasterio
+# import pandas as pd
+
+# lon = 116.17
+# lat = 39.83
+
+# carpeta = Path("worldclim")
+# carpeta.mkdir(exist_ok=True)
+
+# zip_path = carpeta / "wc2.1_10m_bio.zip"
+# url = "https://geodata.ucdavis.edu/climate/worldclim/2_1/base/wc2.1_10m_bio.zip"
+
+# if not zip_path.exists():
+#     print("Descargando WorldClim...")
+#     r = requests.get(url, timeout=120)
+#     r.raise_for_status()
+#     zip_path.write_bytes(r.content)
+
+# with zipfile.ZipFile(zip_path, "r") as z:
+#     z.extractall(carpeta)
+
+# variables = {
+#     1: "Temperatura media anual",
+#     5: "Temperatura máxima del mes más cálido",
+#     6: "Temperatura mínima del mes más frío",
+#     7: "Rango anual de temperatura",
+#     12: "Precipitación anual",
+#     13: "Precipitación del mes más húmedo",
+#     14: "Precipitación del mes más seco",
+#     15: "Estacionalidad de precipitación",
+#     16: "Precipitación del trimestre más húmedo",
+#     17: "Precipitación del trimestre más seco",
+# }
+
+# resultados = []
+
+# for bio, nombre in variables.items():
+#     archivo = carpeta / f"wc2.1_10m_bio_{bio}.tif"
+
+#     with rasterio.open(archivo) as dataset:
+#         row, col = dataset.index(lon, lat)
+#         valor = dataset.read(1)[row, col]
+
+#     # WorldClim: temperaturas BIO suelen venir multiplicadas por 10
+#     if bio in [1, 2, 5, 6, 7, 8, 9, 10, 11]:
+#         valor = valor / 10
+#         unidad = "°C"
+#     elif bio in [12, 13, 14, 16, 17, 18, 19]:
+#         unidad = "mm"
+#     else:
+#         unidad = "índice"
+
+#     resultados.append({
+#         "BIO": f"BIO{bio}",
+#         "Variable": nombre,
+#         "Valor": valor,
+#         "Unidad": unidad
+#     })
+
+# df = pd.DataFrame(resultados)
+# print(df)
+
+########################################################
+### PARA EXTRAER DATOS DE UN RANGO DE TIEMPO ESPECÍFICO 
+########################################################
+# import requests
+# import pandas as pd
+
+# lat = 4.7110
+# lon = -74.0721
+
+# url = (
+#     "https://archive-api.open-meteo.com/v1/archive?"
+#     f"latitude={lat}&longitude={lon}"
+#     "&start_date=2023-01-01&end_date=2023-12-31"
+#     "&daily=temperature_2m_mean,temperature_2m_max,temperature_2m_min,"
+#     "precipitation_sum"
+#     "&timezone=auto"
+# )
+
+# response = requests.get(url)
+# data = response.json()
+
+# df = pd.DataFrame(data["daily"])
+
+# print(df.head())
+
+# # Resumen anual
+# resumen = {
+#     "temp_media": df["temperature_2m_mean"].mean(),
+#     "temp_max": df["temperature_2m_max"].max(),
+#     "temp_min": df["temperature_2m_min"].min(),
+#     "precipitacion_total": df["precipitation_sum"].sum()
+# }
+
+# print("\nResumen:")
+# print(resumen)
+
+
+# df.to_csv("temp.csv")
+
+########################################################
+#### PARA PREDECIR LOS SIGUIENTES 16 DÍAS 
+########################################################
+
+import requests
+import pandas as pd
+
+lat = 4.7110  # latitude
+lon = -74.0721 # longitude
+
+url = (
+    "https://api.open-meteo.com/v1/forecast?"
+    f"latitude={lat}&longitude={lon}"
+    "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum"
+    "&forecast_days=16")
+
+data = requests.get(url).json()
+# Convertir a DataFrame
+df = pd.DataFrame(data["daily"])
+# Renombrar columnas 
+df = df.rename(columns={
+    "time": "fecha",
+    "temperature_2m_max": "temp_max",
+    "temperature_2m_min": "temp_min",
+    "precipitation_sum": "precipitacion"})
+
+print(df)
+
+
